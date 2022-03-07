@@ -131,9 +131,6 @@ protected:
 	BuildContext* m_ctx;
 
 	SampleDebugDraw m_dd;
-	
-	dtNavMesh* loadAll(const char* path);
-	void saveAll(const char* path, const dtNavMesh* mesh);
 
 public:
 	Sample();
@@ -179,6 +176,9 @@ public:
 
 	void resetCommonSettings();
 	void handleCommonSettings();
+
+	dtNavMesh* loadAll(const char* path);
+	void saveAll(const char* path, const dtNavMesh* mesh);
 
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.
