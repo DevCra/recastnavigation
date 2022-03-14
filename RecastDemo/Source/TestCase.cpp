@@ -24,13 +24,6 @@
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 #include "DetourCommon.h"
-#include "SDL.h"
-#include "SDL_opengl.h"
-#ifdef __APPLE__
-#	include <OpenGL/glu.h>
-#else
-#	include <GL/glu.h>
-#endif
 #include "imgui.h"
 #include "PerfTimer.h"
 
@@ -327,136 +320,9 @@ void TestCase::doTests(dtNavMesh* navmesh, dtNavMeshQuery* navquery)
 
 void TestCase::handleRender()
 {
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	for (Test* iter = m_tests; iter; iter = iter->next)
-	{
-		float dir[3];
-		dtVsub(dir, iter->epos, iter->spos);
-		dtVnormalize(dir);
-		glColor4ub(128,25,0,192);
-		glVertex3f(iter->spos[0],iter->spos[1]-0.3f,iter->spos[2]);
-		glVertex3f(iter->spos[0],iter->spos[1]+0.3f,iter->spos[2]);
-		glVertex3f(iter->spos[0],iter->spos[1]+0.3f,iter->spos[2]);
-		glVertex3f(iter->spos[0]+dir[0]*0.3f,iter->spos[1]+0.3f+dir[1]*0.3f,iter->spos[2]+dir[2]*0.3f);
-		glColor4ub(51,102,0,129);
-		glVertex3f(iter->epos[0],iter->epos[1]-0.3f,iter->epos[2]);
-		glVertex3f(iter->epos[0],iter->epos[1]+0.3f,iter->epos[2]);
-
-		if (iter->expand)
-		{
-			const float s = 0.1f;
-			glColor4ub(255,32,0,128);
-			glVertex3f(iter->spos[0]-s,iter->spos[1],iter->spos[2]);
-			glVertex3f(iter->spos[0]+s,iter->spos[1],iter->spos[2]);
-			glVertex3f(iter->spos[0],iter->spos[1],iter->spos[2]-s);
-			glVertex3f(iter->spos[0],iter->spos[1],iter->spos[2]+s);
-			glColor4ub(255,192,0,255);
-			glVertex3f(iter->nspos[0]-s,iter->nspos[1],iter->nspos[2]);
-			glVertex3f(iter->nspos[0]+s,iter->nspos[1],iter->nspos[2]);
-			glVertex3f(iter->nspos[0],iter->nspos[1],iter->nspos[2]-s);
-			glVertex3f(iter->nspos[0],iter->nspos[1],iter->nspos[2]+s);
-			
-			glColor4ub(255,32,0,128);
-			glVertex3f(iter->epos[0]-s,iter->epos[1],iter->epos[2]);
-			glVertex3f(iter->epos[0]+s,iter->epos[1],iter->epos[2]);
-			glVertex3f(iter->epos[0],iter->epos[1],iter->epos[2]-s);
-			glVertex3f(iter->epos[0],iter->epos[1],iter->epos[2]+s);
-			glColor4ub(255,192,0,255);
-			glVertex3f(iter->nepos[0]-s,iter->nepos[1],iter->nepos[2]);
-			glVertex3f(iter->nepos[0]+s,iter->nepos[1],iter->nepos[2]);
-			glVertex3f(iter->nepos[0],iter->nepos[1],iter->nepos[2]-s);
-			glVertex3f(iter->nepos[0],iter->nepos[1],iter->nepos[2]+s);
-		}
-		
-		if (iter->expand)
-			glColor4ub(255,192,0,255);
-		else
-			glColor4ub(0,0,0,64);
-			
-		for (int i = 0; i < iter->nstraight-1; ++i)
-		{
-			glVertex3f(iter->straight[i*3+0],iter->straight[i*3+1]+0.3f,iter->straight[i*3+2]);
-			glVertex3f(iter->straight[(i+1)*3+0],iter->straight[(i+1)*3+1]+0.3f,iter->straight[(i+1)*3+2]);
-		}
-	}
-	glEnd();
-	glLineWidth(1.0f);
 }
 
 bool TestCase::handleRenderOverlay(double* proj, double* model, int* view)
 {
-	GLdouble x, y, z;
-	char text[64], subtext[64];
-	int n = 0;
-
-	static const float LABEL_DIST = 1.0f;
-
-	for (Test* iter = m_tests; iter; iter = iter->next)
-	{
-		float pt[3], dir[3];
-		if (iter->nstraight)
-		{
-			dtVcopy(pt, &iter->straight[3]);
-			if (dtVdist(pt, iter->spos) > LABEL_DIST)
-			{
-				dtVsub(dir, pt, iter->spos);
-				dtVnormalize(dir);
-				dtVmad(pt, iter->spos, dir, LABEL_DIST);
-			}
-			pt[1]+=0.5f;
-		}
-		else
-		{
-			dtVsub(dir, iter->epos, iter->spos);
-			dtVnormalize(dir);
-			dtVmad(pt, iter->spos, dir, LABEL_DIST);
-			pt[1]+=0.5f;
-		}
-		
-		if (gluProject((GLdouble)pt[0], (GLdouble)pt[1], (GLdouble)pt[2],
-					   model, proj, view, &x, &y, &z))
-		{
-			snprintf(text, 64, "Path %d\n", n);
-			unsigned int col = imguiRGBA(0,0,0,128);
-			if (iter->expand)
-				col = imguiRGBA(255,192,0,220);
-			imguiDrawText((int)x, (int)(y-25), IMGUI_ALIGN_CENTER, text, col);
-		}
-		n++;
-	}
-	
-	static int resScroll = 0;
-	bool mouseOverMenu = imguiBeginScrollArea("Test Results", 10, view[3] - 10 - 350, 200, 350, &resScroll);
-//		mouseOverMenu = true;
-		
-	n = 0;
-	for (Test* iter = m_tests; iter; iter = iter->next)
-	{
-		const int total = iter->findNearestPolyTime + iter->findPathTime + iter->findStraightPathTime;
-		snprintf(subtext, 64, "%.4f ms", (float)total/1000.0f);
-		snprintf(text, 64, "Path %d", n);
-		
-		if (imguiCollapse(text, subtext, iter->expand))
-			iter->expand = !iter->expand;
-		if (iter->expand)
-		{
-			snprintf(text, 64, "Poly: %.4f ms", (float)iter->findNearestPolyTime/1000.0f);
-			imguiValue(text);
-
-			snprintf(text, 64, "Path: %.4f ms", (float)iter->findPathTime/1000.0f);
-			imguiValue(text);
-
-			snprintf(text, 64, "Straight: %.4f ms", (float)iter->findStraightPathTime/1000.0f);
-			imguiValue(text);
-			
-			imguiSeparator();
-		}
-		
-		n++;
-	}
-
-	imguiEndScrollArea();
-	
-	return mouseOverMenu;
+	return false;
 }

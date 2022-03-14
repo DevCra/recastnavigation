@@ -22,8 +22,6 @@
 #include <string.h>
 #include <float.h>
 #include <vector>
-#include "SDL.h"
-#include "SDL_opengl.h"
 #include "imgui.h"
 #include "NavMeshPruneTool.h"
 #include "InputGeom.h"
@@ -274,41 +272,6 @@ void NavMeshPruneTool::handleUpdate(const float /*dt*/)
 
 void NavMeshPruneTool::handleRender()
 {
-	duDebugDraw& dd = m_sample->getDebugDraw();
-
-	if (m_hitPosSet)
-	{
-		const float s = m_sample->getAgentRadius();
-		const unsigned int col = duRGBA(255,255,255,255);
-		dd.begin(DU_DRAW_LINES);
-		dd.vertex(m_hitPos[0]-s,m_hitPos[1],m_hitPos[2], col);
-		dd.vertex(m_hitPos[0]+s,m_hitPos[1],m_hitPos[2], col);
-		dd.vertex(m_hitPos[0],m_hitPos[1]-s,m_hitPos[2], col);
-		dd.vertex(m_hitPos[0],m_hitPos[1]+s,m_hitPos[2], col);
-		dd.vertex(m_hitPos[0],m_hitPos[1],m_hitPos[2]-s, col);
-		dd.vertex(m_hitPos[0],m_hitPos[1],m_hitPos[2]+s, col);
-		dd.end();
-	}
-
-	const dtNavMesh* nav = m_sample->getNavMesh();
-	if (m_flags && nav)
-	{
-		for (int i = 0; i < nav->getMaxTiles(); ++i)
-		{
-			const dtMeshTile* tile = nav->getTile(i);
-			if (!tile->header) continue;
-			const dtPolyRef base = nav->getPolyRefBase(tile);
-			for (int j = 0; j < tile->header->polyCount; ++j)
-			{
-				const dtPolyRef ref = base | (unsigned int)j;
-				if (m_flags->getFlags(ref))
-				{
-					duDebugDrawNavMeshPoly(&dd, *nav, ref, duRGBA(255,255,255,128));
-				}
-			}
-		}
-	}
-
 }
 
 void NavMeshPruneTool::handleRenderOverlay(double* proj, double* model, int* view)

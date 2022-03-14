@@ -119,7 +119,7 @@ project "Recast"
 
 project "RecastDemo"
 	language "C++"
-	kind "WindowedApp"
+	kind "ConsoleApp"
 	includedirs { 
 		"../RecastDemo/Include",
 		"../RecastDemo/Contrib",
@@ -152,7 +152,6 @@ project "RecastDemo"
 	-- linux library cflags and libs
 	configuration { "linux", "gmake" }
 		buildoptions { 
-			"`pkg-config --cflags sdl2`",
 			"`pkg-config --cflags gl`",
 			"`pkg-config --cflags glu`",
 			"-Wno-ignored-qualifiers",
@@ -160,34 +159,23 @@ project "RecastDemo"
 
 		}
 		linkoptions { 
-			"`pkg-config --libs sdl2`",
 			"`pkg-config --libs gl`",
 			"`pkg-config --libs glu`" 
 		}
 
 	-- windows library cflags and libs
 	configuration { "windows" }
-		includedirs { "../RecastDemo/Contrib/SDL/include" }
-		libdirs { "../RecastDemo/Contrib/SDL/lib/%{cfg.architecture:gsub('x86_64', 'x64')}" }
 		debugdir "../RecastDemo/Bin/"
 		links { 
 			"glu32",
 			"opengl32",
-			"SDL2",
-			"SDL2main",
-		}
-		postbuildcommands {
-			-- Copy the SDL2 dll to the Bin folder.
-			'{COPY} "%{path.getabsolute("Contrib/SDL/lib/" .. cfg.architecture:gsub("x86_64", "x64") .. "/SDL2.dll")}" "%{cfg.targetdir}"'
 		}
 
 	-- mac includes and libs
 	configuration { "macosx" }
 		kind "ConsoleApp" -- xcode4 failes to run the project if using WindowedApp
-		includedirs { "/Library/Frameworks/SDL2.framework/Headers" }
 		links { 
 			"OpenGL.framework", 
-			"SDL2.framework",
 			"Cocoa.framework",
 		}
 
@@ -234,35 +222,27 @@ project "Tests"
 	-- linux library cflags and libs
 	configuration { "linux", "gmake" }
 		buildoptions { 
-			"`pkg-config --cflags sdl2`",
 			"`pkg-config --cflags gl`",
 			"`pkg-config --cflags glu`",
 			"-Wno-parentheses" -- Disable parentheses warning for the Tests target, as Catch's macros generate this everywhere.
 		}
 		linkoptions { 
-			"`pkg-config --libs sdl2`",
 			"`pkg-config --libs gl`",
 			"`pkg-config --libs glu`" 
 		}
 
 	-- windows library cflags and libs
 	configuration { "windows" }
-		includedirs { "../RecastDemo/Contrib/SDL/include" }
-		libdirs { "../RecastDemo/Contrib/SDL/lib/%{cfg.architecture:gsub('x86_64', 'x64')}" }
 		debugdir "../RecastDemo/Bin/"
 		links { 
 			"glu32",
 			"opengl32",
-			"SDL2",
-			"SDL2main",
 		}
 
 	-- mac includes and libs
 	configuration { "macosx" }
 		kind "ConsoleApp"
-		includedirs { "/Library/Frameworks/SDL2.framework/Headers" }
 		links { 
 			"OpenGL.framework", 
-			"SDL2.framework",
 			"Cocoa.framework",
 		}

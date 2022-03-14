@@ -59,12 +59,6 @@ enum SamplePolyFlags
 	SAMPLE_POLYFLAGS_ALL		= 0xffff	// All abilities.
 };
 
-class SampleDebugDraw : public DebugDrawGL
-{
-public:
-	virtual unsigned int areaToCol(unsigned int area);
-};
-
 enum SamplePartitionType
 {
 	SAMPLE_PARTITION_WATERSHED,
@@ -130,8 +124,6 @@ protected:
 	
 	BuildContext* m_ctx;
 
-	SampleDebugDraw m_dd;
-
 public:
 	Sample();
 	virtual ~Sample();
@@ -141,8 +133,6 @@ public:
 	void setTool(SampleTool* tool);
 	SampleToolState* getToolState(int type) { return m_toolStates[type]; }
 	void setToolState(int type, SampleToolState* s) { m_toolStates[type] = s; }
-
-	SampleDebugDraw& getDebugDraw() { return m_dd; }
 
 	virtual void handleSettings();
 	virtual void handleTools();

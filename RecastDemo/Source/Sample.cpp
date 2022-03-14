@@ -28,33 +28,10 @@
 #include "DetourNavMeshQuery.h"
 #include "DetourCrowd.h"
 #include "imgui.h"
-#include "SDL.h"
-#include "SDL_opengl.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
 #endif
-
-unsigned int SampleDebugDraw::areaToCol(unsigned int area)
-{
-	switch(area)
-	{
-	// Ground (0) : light blue
-	case SAMPLE_POLYAREA_GROUND: return duRGBA(0, 192, 255, 255);
-	// Water : blue
-	case SAMPLE_POLYAREA_WATER: return duRGBA(0, 0, 255, 255);
-	// Road : brown
-	case SAMPLE_POLYAREA_ROAD: return duRGBA(50, 20, 12, 255);
-	// Door : cyan
-	case SAMPLE_POLYAREA_DOOR: return duRGBA(0, 255, 255, 255);
-	// Grass : green
-	case SAMPLE_POLYAREA_GRASS: return duRGBA(0, 255, 0, 255);
-	// Jump : yellow
-	case SAMPLE_POLYAREA_JUMP: return duRGBA(255, 255, 0, 255);
-	// Unexpected : red
-	default: return duRGBA(255, 0, 0, 255);
-	}
-}
 
 Sample::Sample() :
 	m_geom(0),
@@ -110,14 +87,6 @@ void Sample::handleRender()
 {
 	if (!m_geom)
 		return;
-	
-	// Draw mesh
-	duDebugDrawTriMesh(&m_dd, m_geom->getMesh()->getVerts(), m_geom->getMesh()->getVertCount(),
-					   m_geom->getMesh()->getTris(), m_geom->getMesh()->getNormals(), m_geom->getMesh()->getTriCount(), 0, 1.0f);
-	// Draw bounds
-	const float* bmin = m_geom->getMeshBoundsMin();
-	const float* bmax = m_geom->getMeshBoundsMax();
-	duDebugDrawBoxWire(&m_dd, bmin[0],bmin[1],bmin[2], bmax[0],bmax[1],bmax[2], duRGBA(255,255,255,128), 1.0f);
 }
 
 void Sample::handleRenderOverlay(double* /*proj*/, double* /*model*/, int* /*view*/)
