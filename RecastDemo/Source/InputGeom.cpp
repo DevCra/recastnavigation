@@ -30,6 +30,7 @@
 #include "RecastDebugDraw.h"
 #include "DetourNavMesh.h"
 #include "Sample.h"
+#include "ofbx.h"
 
 static bool intersectSegmentTriangle(const float* sp, const float* sq,
 									 const float* a, const float* b, const float* c,
@@ -121,7 +122,7 @@ InputGeom::~InputGeom()
 	delete m_chunkyMesh;
 	delete m_mesh;
 }
-		
+
 bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 {
 	if (m_mesh)
@@ -133,7 +134,7 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 	}
 	m_offMeshConCount = 0;
 	m_volumeCount = 0;
-	
+
 	m_mesh = new rcMeshLoaderObj;
 	if (!m_mesh)
 	{
@@ -158,9 +159,127 @@ bool InputGeom::loadMesh(rcContext* ctx, const std::string& filepath)
 	{
 		ctx->log(RC_LOG_ERROR, "buildTiledNavigation: Failed to build chunky mesh.");
 		return false;
-	}		
+	}
 
 	return true;
+}
+
+bool saveAsOBJ(ofbx::IScene& scene, const char* path)
+{
+	FILE* fp = fopen(path, "wb");
+	if (!fp) return false;
+	int obj_idx = 0;
+	int indices_offset = 0;
+	int normals_offset = 0;
+	int mesh_count = scene.getMeshCount();
+	for (int i = 0; i < mesh_count; ++i)
+	{
+		fprintf(fp, "o obj%d\ng grp%d\n", i, obj_idx);
+
+		const ofbx::Mesh& mesh = *scene.getMesh(i);
+		const ofbx::Geometry& geom = *mesh.getGeometry();
+		int vertex_count = geom.getVertexCount();
+		const ofbx::Vec3* vertices = geom.getVertices();
+		for (int i = 0; i < vertex_count; ++i)
+		{
+			ofbx::Vec3 v = vertices[i];
+			fprintf(fp, "v %f %f %f\n", v.x, v.y, v.z);
+		}
+
+		bool has_normals = geom.getNormals() != nullptr;
+		if (has_normals)
+		{
+			const ofbx::Vec3* normals = geom.getNormals();
+			int count = geom.getIndexCount();
+
+			for (int i = 0; i < count; ++i)
+			{
+				ofbx::Vec3 n = normals[i];
+				fprintf(fp, "vn %f %f %f\n", n.x, n.y, n.z);
+			}
+		}
+
+		bool has_uvs = geom.getUVs() != nullptr;
+		if (has_uvs)
+		{
+			const ofbx::Vec2* uvs = geom.getUVs();
+			int count = geom.getIndexCount();
+
+			for (int i = 0; i < count; ++i)
+			{
+				ofbx::Vec2 uv = uvs[i];
+				fprintf(fp, "vt %f %f\n", uv.x, uv.y);
+			}
+		}
+
+		const int* faceIndices = geom.getFaceIndices();
+		int index_count = geom.getIndexCount();
+		bool new_face = true;
+		for (int i = 0; i < index_count; ++i)
+		{
+			if (new_face)
+			{
+				fputs("f ", fp);
+				new_face = false;
+			}
+			int idx = (faceIndices[i] < 0) ? -faceIndices[i] : (faceIndices[i] + 1);
+			int vertex_idx = indices_offset + idx;
+			fprintf(fp, "%d", vertex_idx);
+
+			if (has_uvs)
+			{
+				int uv_idx = normals_offset + i + 1;
+				fprintf(fp, "/%d", uv_idx);
+			}
+			else
+			{
+				fprintf(fp, "/");
+			}
+
+			if (has_normals)
+			{
+				int normal_idx = normals_offset + i + 1;
+				fprintf(fp, "/%d", normal_idx);
+			}
+			else
+			{
+				fprintf(fp, "/");
+			}
+
+			new_face = faceIndices[i] < 0;
+			fputc(new_face ? '\n' : ' ', fp);
+		}
+
+		indices_offset += vertex_count;
+		normals_offset += index_count;
+		++obj_idx;
+	}
+	fclose(fp);
+	return true;
+}
+
+bool InputGeom::loadFbxMesh(rcContext* ctx, const std::string& filepath)
+{
+	FILE* fp = fopen(filepath.c_str(), "rb");
+
+	if (!fp) return false;
+
+	fseek(fp, 0, SEEK_END);
+	long file_size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	auto* content = new ofbx::u8[file_size];
+	fread(content, 1, file_size, fp);
+	auto scene = ofbx::load((ofbx::u8*)content, file_size, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	if (!scene) {
+		//OutputDebugString(ofbx::getError());
+	}
+	else {
+		saveAsOBJ(*scene, "out.obj");
+	}
+	delete[] content;
+	fclose(fp);
+
+	return loadMesh(ctx, "out.obj");
 }
 
 bool InputGeom::loadGeomSet(rcContext* ctx, const std::string& filepath)
@@ -310,6 +429,8 @@ bool InputGeom::load(rcContext* ctx, const std::string& filepath)
 		return loadGeomSet(ctx, filepath);
 	if (extension == ".obj")
 		return loadMesh(ctx, filepath);
+	if (extension == ".fbx")
+		return loadFbxMesh(ctx, filepath);
 
 	return false;
 }

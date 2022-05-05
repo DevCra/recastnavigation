@@ -95,8 +95,9 @@ class InputGeom
 	ConvexVolume m_volumes[MAX_VOLUMES];
 	int m_volumeCount;
 	///@}
-	
+
 	bool loadMesh(class rcContext* ctx, const std::string& filepath);
+	bool loadFbxMesh(class rcContext* ctx, const std::string& filepath);
 	bool loadGeomSet(class rcContext* ctx, const std::string& filepath);
 public:
 	InputGeom();
